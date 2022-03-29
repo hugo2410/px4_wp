@@ -24,8 +24,9 @@ WaypointNav::WaypointNav() : Node("drone")
 
 void WaypointNav::flight_mode_timer_callback()
 {
-
-	if (_offboard_setpoint_counter == 25)
+    Eigen::VectorXd current_position;
+    current_position<< gps_info.lat, gps_info.lon, gps_info.alt;
+    if (_offboard_setpoint_counter == 25)
 	{
 		this->setFlightMode(FlightMode::mOffboard);
 	}
@@ -33,42 +34,58 @@ void WaypointNav::flight_mode_timer_callback()
 	if (_offboard_setpoint_counter == 50)
 	{
 		this->arm();
+        initial_pos<< gps_info.lat, gps_info.lon, gps_info.alt;
 	}
 
 	if (_offboard_setpoint_counter == 200)
 	{
 		this->publish_offboard_control_mode();
 		this->publish_trajectory_setpoint(0.0, 0.0, -5.0, 1.6);
+        std::ifstream inFile("waypoints.txt");
+
+        if(inFile)
+        {
+            while(getline(inFile, line, '\n'))
+            {
+                //create a temporary vector that will contain all the columns
+                Eigen::VectorXd tempVec;
+                std::istringstream ss(line);
+
+                //read word by word(or int by int)
+                while(ss >> word)
+                {
+
+                    //add the word to the temporary vector
+                    tempVec.push_back(word);
+
+                }
+
+                //now all the words from the current line has been added to the temporary vector
+                vec.emplace_back(tempVec);
+            }
+        }
+        current_wp =0;
 	}
 
-    if (gps_info )
+    if ((current_position - wp.at(current_wp)).norm()< DIST_WP )
     {
-        this->publish_offboard_control_mode();
-        this->publish_trajectory_setpoint(10, 0.0, -5.0, 0);
-    }
+        if(current_wp+1<wp.size()) {
+            current_wp += 1;
+            this->publish_offboard_control_mode();
+            this->publish_trajectory_setpoint(wp.at(current_wp)(0), wp.at(current_wp)(1), wp.at(current_wp)(2), 0);
+            ofstream outdata;
+            outdata.open("output.txt"); // opens the file
+            if( !outdata ) { // file couldn't be opened
+                cerr << "Error: file could not be opened" << endl;
+                exit(1);
+            }
+            outdata << current_position(0) << "\t"  <<  current_position(1) << "\t"  << current_position(2) << "\t"  <<endl;
+            outdata.close();
 
-    if (_offboard_setpoint_counter < 400 && _offboard_setpoint_counter > 300)
-    {
-        this->publish_offboard_control_mode();
-        this->publish_trajectory_setpoint(10, 10, -5.0, 1.6);
-    }
+        }
+        else
+            this->setFlightMode(FlightMode::mLand);
 
-    if (_offboard_setpoint_counter < 500 && _offboard_setpoint_counter > 400)
-    {
-        this->publish_offboard_control_mode();
-        this->publish_trajectory_setpoint(0, 10, -5.0, 3.14);
-    }
-
-    if (_offboard_setpoint_counter < 600 && _offboard_setpoint_counter > 500)
-    {
-        this->publish_offboard_control_mode();
-        this->publish_trajectory_setpoint(0, 0, -5.0, -1.6);
-    }
-
-    if (_offboard_setpoint_counter == 600)
-    {
-        this->setFlightMode(FlightMode::mLand);
-    }
 
 	_offboard_setpoint_counter++;
 }

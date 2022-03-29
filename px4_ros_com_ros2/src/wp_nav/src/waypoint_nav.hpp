@@ -11,11 +11,15 @@
 #include <stdint.h>
 
 #include <chrono>
+#include <eigen3/Eigen/Eigen>
 #include <iostream>
+
+#define DIST_WP 5.0
 
 using namespace std::chrono;
 using namespace std::chrono_literals;
 using namespace px4_msgs::msg;
+using std::ofstream;
 
 class WaypointNav : public rclcpp::Node
 {
@@ -48,6 +52,10 @@ private:
 	std::atomic<uint64_t> _timestamp;		// common synced timestamped
 
     VehicleGpsPosition gps_info{};
+    Eigen::VectorXd initial_pos;
+    int current_wp;
+
+    std::vector<Eigen::VectorXd> wp;
 
 	rclcpp::Publisher<OffboardControlMode>::SharedPtr _offboard_control_mode_publisher;
 	rclcpp::Publisher<TrajectorySetpoint>::SharedPtr _trajectory_setpoint_publisher;
