@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(px4_missions)
+project(wp_nav)
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
@@ -25,42 +25,22 @@ find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 
 # simpleMission
-add_executable(simpleMission
+add_executable(wp_nav
   src/simpleMission.cpp
         src/wapoint_nav.cpp
   )
 
-ament_target_dependencies(simpleMission
+ament_target_dependencies(wp_nav
   rclcpp
   px4_msgs
 )
 
-target_include_directories(simpleMission PUBLIC
+target_include_directories(wp_nav PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
 
-install(TARGETS simpleMission
+install(TARGETS wp_nav
   DESTINATION lib/${PROJECT_NAME})
-
-
-# multipleMission
-add_executable(multipleMission
-  src/multipleMission.cpp
-        src/wapoint_nav.cpp
-  )
-
-ament_target_dependencies(multipleMission
-  rclcpp
-  px4_msgs
-)
-
-target_include_directories(multipleMission PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>)
-
-install(TARGETS multipleMission
-  DESTINATION lib/${PROJECT_NAME})
-
 
 
 if(BUILD_TESTING)
