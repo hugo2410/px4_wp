@@ -6,6 +6,7 @@
 #include <px4_msgs/msg/timesync.hpp>
 #include <px4_msgs/msg/vehicle_command.hpp>
 #include <px4_msgs/msg/vehicle_control_mode.hpp>
+#include <px4_msgs/msg/vehicle_gps_position.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <stdint.h>
 
@@ -38,6 +39,7 @@ private:
 	void publish_offboard_control_mode();
 	void publish_trajectory_setpoint(float x, float y, float z, float yaw);
 	void publish_vehicle_command(uint16_t command, float param1 = 0.0, float param2 = 0.0, float param3 = 0.0, float param4 = 0.0, float param5 = 0.0);
+    void callback_subscriber_gps_info(const px4_msgs::msg::VehicleGpsPosition::SharedPtr msg);
 
 	void flight_mode_timer_callback();
 
@@ -45,10 +47,13 @@ private:
 	uint64_t _offboard_setpoint_counter;   	// counter for the number of setpoints sent
 	std::atomic<uint64_t> _timestamp;		// common synced timestamped
 
+    VehicleGpsPosition gps_info{};
+
 	rclcpp::Publisher<OffboardControlMode>::SharedPtr _offboard_control_mode_publisher;
 	rclcpp::Publisher<TrajectorySetpoint>::SharedPtr _trajectory_setpoint_publisher;
 	rclcpp::Publisher<VehicleCommand>::SharedPtr _vehicle_command_publisher;
 	rclcpp::Subscription<px4_msgs::msg::Timesync>::SharedPtr _timesync_sub;
+    rclcpp::Subscription<px4_msgs::msg::VehicleGpsPosition>::SharedPtr _gps_subcriber_;
 
 };
 

@@ -7,8 +7,11 @@ WaypointNav::WaypointNav() : Node("drone")
 	_offboard_control_mode_publisher = this->create_publisher<OffboardControlMode>(vehicleName + "fmu/offboard_control_mode/in", 10);
 	_trajectory_setpoint_publisher = this->create_publisher<TrajectorySetpoint>(vehicleName + "fmu/trajectory_setpoint/in", 10);
 	_vehicle_command_publisher = this->create_publisher<VehicleCommand>(vehicleName + "fmu/vehicle_command/in", 10);
+    _gps_subcriber_ = this->create_subscription<px4_msgs::msg::VehicleGpsPosition>(
+            "fmu/vehicle_gps_position/out", 10,
+            std::bind(&WaypointNav::callback_subscriber_gps_info, this, std::placeholders::_1));
 
-	// get common timestamp
+                    // get common timestamp
 	_timesync_sub = this->create_subscription<px4_msgs::msg::Timesync>("vhcl0/fmu/timesync/out", 10, [this](const px4_msgs::msg::Timesync::UniquePtr msg) {_timestamp.store(msg->timestamp);});
 
 	_offboard_setpoint_counter = 0;
@@ -32,40 +35,40 @@ void WaypointNav::flight_mode_timer_callback()
 		this->arm();
 	}
 
-	if (_offboard_setpoint_counter < 200)
+	if (_offboard_setpoint_counter == 200)
 	{
 		this->publish_offboard_control_mode();
 		this->publish_trajectory_setpoint(0.0, 0.0, -5.0, 1.6);
 	}
 
-	if (_offboard_setpoint_counter < 300 && _offboard_setpoint_counter > 200)
-	{
-		this->publish_offboard_control_mode();
-		this->publish_trajectory_setpoint(10, 0.0, -5.0, 0);
-	}
+    if (gps_info )
+    {
+        this->publish_offboard_control_mode();
+        this->publish_trajectory_setpoint(10, 0.0, -5.0, 0);
+    }
 
-	if (_offboard_setpoint_counter < 400 && _offboard_setpoint_counter > 300) 
-	{
-		this->publish_offboard_control_mode();
-		this->publish_trajectory_setpoint(10, 10, -5.0, 1.6);
-	}
+    if (_offboard_setpoint_counter < 400 && _offboard_setpoint_counter > 300)
+    {
+        this->publish_offboard_control_mode();
+        this->publish_trajectory_setpoint(10, 10, -5.0, 1.6);
+    }
 
-	if (_offboard_setpoint_counter < 500 && _offboard_setpoint_counter > 400) 
-	{
-		this->publish_offboard_control_mode();
-		this->publish_trajectory_setpoint(0, 10, -5.0, 3.14);
-	}
+    if (_offboard_setpoint_counter < 500 && _offboard_setpoint_counter > 400)
+    {
+        this->publish_offboard_control_mode();
+        this->publish_trajectory_setpoint(0, 10, -5.0, 3.14);
+    }
 
-	if (_offboard_setpoint_counter < 600 && _offboard_setpoint_counter > 500) 
-	{
-		this->publish_offboard_control_mode();
-		this->publish_trajectory_setpoint(0, 0, -5.0, -1.6);
-	}
+    if (_offboard_setpoint_counter < 600 && _offboard_setpoint_counter > 500)
+    {
+        this->publish_offboard_control_mode();
+        this->publish_trajectory_setpoint(0, 0, -5.0, -1.6);
+    }
 
-	if (_offboard_setpoint_counter == 600)
-	{
-		this->setFlightMode(FlightMode::mLand);
-	}
+    if (_offboard_setpoint_counter == 600)
+    {
+        this->setFlightMode(FlightMode::mLand);
+    }
 
 	_offboard_setpoint_counter++;
 }
@@ -160,4 +163,11 @@ void WaypointNav::publish_vehicle_command(uint16_t command, float param1, float 
 	msg.from_external = true;
 
 	_vehicle_command_publisher->publish(msg);
+}
+void WaypointNav::callback_subscriber_gps_info(const px4_msgs::msg::VehicleGpsPosition::SharedPtr msg)
+{
+    gps_info.timestamp = msg->timestamp;
+    gps_info.lat = msg->lat;
+    gps_info.lon = msg->lon;
+    gps_info.alt = msg->alt;
 }
